@@ -1,5 +1,5 @@
 {
-  "name": "pocketbase-query",
+  "name": "@emresandikci/pocketbase-query",
   "version": "0.1.0",
   "description": "A pocketbase query builder",
   "main": "./dist/index.js",
