@@ -1,8 +1,7 @@
 # Pocketbase Query
 
-<a><img src="https://img.shields.io/npm/v/@emresandikci/pocketbase-query?color=birgtgreen"></a> <a><img src="https://img.shields.io/npm/l/@emresandikci/pocketbase-query"></a><a href="#badge">
+<a href="https://www.npmjs.com/package/@emresandikci/pocketbase-query"><img src="https://img.shields.io/npm/v/@emresandikci/pocketbase-query?color=birgtgreen"></a><img src="https://img.shields.io/npm/l/@emresandikci/pocketbase-query">
     <img alt="semantic-release" src="https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg">
-  </a>
 <a href="https://twitter.com/emresand1kc1" target="\_parent">
   <img alt="" src="https://img.shields.io/twitter/follow/emresandikci.svg?style=social&label=Follow" />
 </a>
