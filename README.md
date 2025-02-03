@@ -40,14 +40,22 @@ const query = PocketbaseQuery.getInstance<MyType>();
 ## Example
 
 ```typescript
-const query = PocketbaseQuery.getInstance<{ status: string; price: string }>();
+import PocketbaseQuery from '@emresandikci/pocketbase-query';
 
-const filter = query
-  .equal("status", "active")
+const query = PocketbaseQuery.getInstance<{ status: string; comments: number }>();
+
+const customFilters = query
+  .equal('status', 'active')
   .and()
-  .greaterThan("price", "50")
+  .greaterThan('comments', 50)
   .build();
 
+console.log(customFilters); // Outputs: status='active' && comments>50
+
+await pb.collection('posts').getFullList({
+	filter: customFilters,
+	expand: [{ key: 'comments_via_post' }],
+})
 ```
 
 ---
