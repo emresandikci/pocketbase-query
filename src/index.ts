@@ -47,7 +47,12 @@ class PocketbaseQuery<T> {
       PocketbaseQuery.instance = new PocketbaseQuery<T>();
     }
     PocketbaseQuery.instance.query = "";
+    PocketbaseQuery.instance.lastQueryValue = "";
     return PocketbaseQuery.instance;
+  }
+
+  getLastQueryValue() {
+    return this.lastQueryValue;
   }
 
   /**
@@ -68,12 +73,18 @@ class PocketbaseQuery<T> {
    * @returns {PocketbaseQuery<T>} The current instance for chaining.
    */
   private addExpression({ field, operator, value }: Expression<T>) {
-    this.lastQueryValue = value;
+    const isValidValue = value !== null && value !== undefined && value !== '';
+    
     if (typeof value === "boolean") {
+      this.lastQueryValue = value.toString();
       this.query += `${field.toString()}${operator}${value}`;
       return this;
     }
-    if (value) this.query += `${field.toString()}${operator}"${value}"`;
+    
+    if (isValidValue) {
+      this.lastQueryValue = value;
+      this.query += `${field.toString()}${operator}"${value}"`;
+    }
     return this;
   }
 
@@ -85,7 +96,7 @@ class PocketbaseQuery<T> {
    * @returns {PocketbaseQuery<T>} The current instance for chaining.
    */
   and() {
-    if (this.lastQueryValue) this.query += " && ";
+    this.query += " && ";
     this.lastQueryValue = "";
     return this;
   }
@@ -98,9 +109,9 @@ class PocketbaseQuery<T> {
  * @returns {PocketbaseQuery<T>} The current instance for chaining.
  */
   or() {
-    if (this.lastQueryValue) this.query += " || ";
+    this.query += " || ";
     this.lastQueryValue = "";
-   return this;
+    return this;
   }
 
   /**
@@ -374,10 +385,15 @@ class PocketbaseQuery<T> {
    * @returns {PocketbaseQuery<T>} The current instance for chaining.
    */
   in(field: keyof T, values: any[]) {
-    if (!values.length) return this;
-    values.forEach((value, index) => {
+    const validValues = values.filter(value => 
+      value !== null && value !== undefined && value !== ''
+    );
+    
+    if (!validValues.length) return this;
+    
+    validValues.forEach((value, index) => {
       this.addExpression({ field, operator: OperatorEnum.Like, value });
-      if (index < values.length - 1) this.or();
+      if (index < validValues.length - 1) this.or();
     });
     return this;
   }
@@ -404,6 +420,7 @@ class PocketbaseQuery<T> {
   getQuery() {
     return this.query;
   }
+
   /**
    * Builds the query string.
    * This method is used to generate the final filter string from the query builder.
@@ -414,18 +431,64 @@ class PocketbaseQuery<T> {
    */
   build() {
     let result = this.query.trim();
-
-    if (result.endsWith(" ||")) {
-      result = result.slice(0, -3);
-    }
-
-    if (result.endsWith(" &&")) {
-      result = result.slice(0, -3);
-    }
+    
+    result = this.cleanupQuery(result);
 
     this.query = "";
     this.lastQueryValue = "";
     return result.trim();
+  }
+
+  /**
+   * Clean up the query string by removing unnecessary operators, brackets, and whitespace.
+   * This method is used internally by the query builder to generate a valid filter string.
+   * @param {string} query - The query string to be cleaned.
+   * @returns {string} The cleaned query string.
+   * @private
+   */
+   private cleanupQuery(query: string): string {
+    let result = query;
+    let prevResult = '';
+    
+    while (result !== prevResult) {
+      prevResult = result;
+      
+      // Remove empty brackets first
+      result = result.replace(/\(\s*\)/g, '');
+      
+      // Remove operators before closing brackets: || ) or && )
+      result = result.replace(/\s*(&&|\|\|)\s*\)/g, ')');
+      
+      // Remove operators after opening brackets: ( || or ( &&
+      result = result.replace(/\(\s*(&&|\|\|)\s*/g, '(');
+      
+      // Remove double operators: || || or && && or || && or && ||
+      result = result.replace(/\s*(&&|\|\|)\s+(&&|\|\|)\s*/g, ' $2 ');
+      
+      // Remove trailing operators
+      result = result.replace(/\s*(&&|\|\|)\s*$/, '');
+      
+      // Remove leading operators
+      result = result.replace(/^\s*(&&|\|\|)\s*/, '');
+      
+      // Handle specific pattern: ")condition" -> ") && condition"
+      result = result.replace(/\)([a-zA-Z_][a-zA-Z0-9_]*[=!<>~?]+)/g, ') && $1');
+      
+      // Clean up spacing around operators
+      result = result.replace(/\s*(&&|\|\|)\s*/g, ' $1 ');
+      
+      // Remove empty brackets again after other cleanups
+      result = result.replace(/\(\s*\)/g, '');
+      
+      // Clean up brackets
+      result = result.replace(/\(\)\s*([a-zA-Z])/g, '$1');
+      result = result.replace(/([a-zA-Z\)"])\s*\(\)/g, '$1');
+      
+      // Clean up any remaining whitespace issues
+      result = result.replace(/\s+/g, ' ').trim();
+    }
+    
+    return result;
   }
 }
 
