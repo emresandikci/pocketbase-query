@@ -9,7 +9,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "tsup --env.NODE_ENV production",
     "test": "jest",
     "prepare": "husky",
     "lint": "npx eslint \"src/**/*.{ts,js}\"",
