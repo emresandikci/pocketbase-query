@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.4.1](https://github.com/emresandikci/pocketbase-query/compare/v0.3.0...v0.4.1) (2025-05-25)
+
+
+### Bug Fixes
+
+* **bracket-handling:** resolve bracket handling bug with empty values ([a660fb0](https://github.com/emresandikci/pocketbase-query/commit/a660fb0dbdb0a666abda2437ea67bb7329597c32))
+
 ## [0.4.0](https://github.com/emresandikci/pocketbase-query/compare/v0.3.0...v0.4.0) (2025-02-26)
 
 ## [0.3.0](https://github.com/emresandikci/pocketbase-query/compare/v0.1.0...v0.3.0) (2025-02-23)
