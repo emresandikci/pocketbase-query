@@ -121,4 +121,21 @@ describe("PocketbaseQuery", () => {
 
     expect(query2).toBe('age>"30"');
   });
+
+    it("should create a query with open and close brackets with AND and NOT EQUAL condition", () => {
+    const query = PocketbaseQuery.getInstance<{ title: string, content: string,tags: string, notebook: string }>()
+      .openBracket()
+        .like('title', 'searchInput')
+        .or()
+        .like('content', 'searchInput')
+        .or()
+        .like('tags', "searchedTag.id")
+			.closeBracket()
+			.and()
+			.notEqual('notebook', "defaultNotebookState.trashID")
+      .build();
+
+
+    expect(query).toBe('(title~"searchInput" || content~"searchInput" || tags~"searchedTag.id") && notebook!="defaultNotebookState.trashID"');
+  });
 });
