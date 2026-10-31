@@ -243,6 +243,14 @@ const finalQuery = query.build();
 
 ---
 
+## Releases
+
+Versions and npm releases are automated with [semantic-release](https://github.com/semantic-release/semantic-release). Every push to `main` runs the tests, and when the commits since the last tag contain a `fix:`, `feat:` or breaking change, the next version is published to npm, tagged, and added to `CHANGELOG.md`. Pull requests get a comment with the version they would release.
+
+Commit with `npm run commit` or write [Conventional Commits](https://www.conventionalcommits.org/) by hand.
+
+---
+
 ## License
 
 MIT License

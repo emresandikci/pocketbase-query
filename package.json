@@ -8,15 +8,22 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "tsup --env.NODE_ENV production",
     "test": "jest",
     "typecheck": "tsc",
     "prepare": "husky",
+    "prepublishOnly": "npm run build",
     "lint": "eslint \"src/**/*.{ts,js}\"",
     "lint:fix": "eslint \"src/**/*.{ts,js}\" --fix",
     "format": "prettier --write \"src/**/*.{js,ts}\"",
     "validate": "prettier --check \"src/**/*.{js,ts}\" && npm run lint",
+    "release": "semantic-release",
+    "release:dry": "semantic-release --dry-run",
     "commit": "git-cz"
   },
   "devDependencies": {
