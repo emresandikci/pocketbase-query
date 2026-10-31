@@ -1,3 +1,16 @@
+# [0.5.0](https://github.com/emresandikci/pocketbase-query/compare/v0.4.1...v0.5.0) (2026-10-31)
+
+
+### Bug Fixes
+
+* **build:** add an exports map for ESM and CJS entry points ([d4046c5](https://github.com/emresandikci/pocketbase-query/commit/d4046c51465a914833e03253344b54009eb49f57))
+* **query:** return a new builder from getInstance ([5739cf7](https://github.com/emresandikci/pocketbase-query/commit/5739cf752a3cddb20a1c4235f2616b14696e034f))
+
+
+### Features
+
+* **query:** support PocketBase v0.40 filter syntax and escape values ([07e9d49](https://github.com/emresandikci/pocketbase-query/commit/07e9d49d363ce6e5103aac69e4787d3c52f18e42))
+
 # Changelog
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
