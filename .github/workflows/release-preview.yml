@@ -1,0 +1,48 @@
+name: Release preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+
+concurrency:
+  group: release-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  HUSKY: 0
+
+jobs:
+  preview:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout PR merge ref
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Name the local branch after the PR base
+        run: git checkout -B "${{ github.base_ref }}"
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compute next version and comment on the PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node .github/scripts/release-preview.mjs

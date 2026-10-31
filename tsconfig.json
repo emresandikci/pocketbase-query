@@ -10,9 +10,9 @@
       "moduleResolution": "bundler",
       "allowImportingTsExtensions": true,
       "resolveJsonModule": true,
+      "types": ["jest"],
       "isolatedModules": true,
       "noEmit": true,
-      "baseUrl": "./src",
   
       /* Linting */
       "strict": true,
