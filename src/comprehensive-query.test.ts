@@ -35,20 +35,12 @@ describe('PocketbaseQuery Comprehensive Tests', () => {
     });
 
     test('should build query with AND operator', () => {
-      const result = query
-        .equal('status', 'active')
-        .and()
-        .greaterThan('comments', '50')
-        .build();
+      const result = query.equal('status', 'active').and().greaterThan('comments', '50').build();
       expect(result).toBe('status="active" && comments>"50"');
     });
 
     test('should build query with OR operator', () => {
-      const result = query
-        .equal('status', 'active')
-        .or()
-        .equal('status', 'pending')
-        .build();
+      const result = query.equal('status', 'active').or().equal('status', 'pending').build();
       expect(result).toBe('status="active" || status="pending"');
     });
 
@@ -72,7 +64,9 @@ describe('PocketbaseQuery Comprehensive Tests', () => {
         .notEqual('notebook', 'trash123')
         .build();
 
-      expect(result).toBe('(title~"test" || content~"test" || tags~"tag123") && notebook!="trash123"');
+      expect(result).toBe(
+        '(title~"test" || content~"test" || tags~"tag123") && notebook!="trash123"'
+      );
     });
 
     test('should handle brackets without additional conditions', () => {
@@ -240,7 +234,9 @@ describe('PocketbaseQuery Comprehensive Tests', () => {
         .notEqual('notebook', 'trash')
         .build();
 
-      expect(result).toBe('(title~"search" || (content~"search" && status="published")) && notebook!="trash"');
+      expect(result).toBe(
+        '(title~"search" || (content~"search" && status="published")) && notebook!="trash"'
+      );
     });
 
     test('should handle multiple bracket groups', () => {
@@ -258,7 +254,9 @@ describe('PocketbaseQuery Comprehensive Tests', () => {
         .closeBracket()
         .build();
 
-      expect(result).toBe('(title~"test" || content~"test") && (status="active" || status="published")');
+      expect(result).toBe(
+        '(title~"test" || content~"test") && (status="active" || status="published")'
+      );
     });
 
     test('should handle complex query with empty values', () => {
@@ -280,7 +278,9 @@ describe('PocketbaseQuery Comprehensive Tests', () => {
         .closeBracket()
         .build();
 
-      expect(result).toBe('(title~"search" || description~"search") && (status="active" || status="published")');
+      expect(result).toBe(
+        '(title~"search" || description~"search") && (status="active" || status="published")'
+      );
     });
   });
 
@@ -309,7 +309,12 @@ describe('PocketbaseQuery Comprehensive Tests', () => {
         { method: 'anyEqual', field: 'tags', value: 'important', expected: 'tags?="important"' },
         { method: 'anyNotEqual', field: 'tags', value: 'spam', expected: 'tags?!="spam"' },
         { method: 'anyGreaterThan', field: 'scores', value: '80', expected: 'scores?>"80"' },
-        { method: 'anyGreaterThanOrEqual', field: 'scores', value: '80', expected: 'scores?>="80"' },
+        {
+          method: 'anyGreaterThanOrEqual',
+          field: 'scores',
+          value: '80',
+          expected: 'scores?>="80"',
+        },
         { method: 'anyLessThan', field: 'scores', value: '60', expected: 'scores?<"60"' },
         { method: 'anyLessThanOrEqual', field: 'scores', value: '60', expected: 'scores?<="60"' },
         { method: 'anyLike', field: 'tags', value: 'tech', expected: 'tags?~"tech"' },
@@ -331,7 +336,9 @@ describe('PocketbaseQuery Comprehensive Tests', () => {
     });
 
     test('should filter out empty values in IN', () => {
-      const result = query.in('category', ['electronics', '', 'furniture', null, 'books', undefined]).build();
+      const result = query
+        .in('category', ['electronics', '', 'furniture', null, 'books', undefined])
+        .build();
       expect(result).toBe('category~"electronics" || category~"furniture" || category~"books"');
     });
 
@@ -402,20 +409,12 @@ describe('PocketbaseQuery Comprehensive Tests', () => {
     });
 
     test('should handle trailing operators', () => {
-      const result = query
-        .equal('status', 'active')
-        .or()
-        .build();
+      const result = query.equal('status', 'active').or().build();
       expect(result).toBe('status="active"');
     });
 
     test('should handle leading operators in brackets', () => {
-      const result = query
-        .openBracket()
-        .or()
-        .equal('status', 'active')
-        .closeBracket()
-        .build();
+      const result = query.openBracket().or().equal('status', 'active').closeBracket().build();
       expect(result).toBe('(status="active")');
     });
   });
@@ -425,7 +424,7 @@ describe('PocketbaseQuery Comprehensive Tests', () => {
       query.equal('status', 'active');
       const firstResult = query.build();
       const secondResult = query.equal('category', 'tech').build();
-      
+
       expect(firstResult).toBe('status="active"');
       expect(secondResult).toBe('category="tech"');
     });
@@ -433,7 +432,7 @@ describe('PocketbaseQuery Comprehensive Tests', () => {
     test('should maintain singleton behavior', () => {
       const query1 = PocketbaseQuery.getInstance<TestRecord>();
       const query2 = PocketbaseQuery.getInstance<TestRecord>();
-      
+
       expect(query1).toBe(query2);
     });
 
@@ -441,7 +440,7 @@ describe('PocketbaseQuery Comprehensive Tests', () => {
       query.equal('status', 'active');
       const newQuery = PocketbaseQuery.getInstance<TestRecord>();
       const result = newQuery.equal('category', 'tech').build();
-      
+
       expect(result).toBe('category="tech"');
     });
   });
@@ -451,7 +450,7 @@ describe('PocketbaseQuery Comprehensive Tests', () => {
       query.equal('status', 'active').and().like('title', 'test');
       const currentQuery = query.getQuery();
       const builtQuery = query.build();
-      
+
       expect(currentQuery).toBe('status="active" && title~"test"');
       expect(builtQuery).toBe('status="active" && title~"test"');
     });
@@ -459,7 +458,7 @@ describe('PocketbaseQuery Comprehensive Tests', () => {
     test('should show intermediate query state', () => {
       query.equal('status', 'active');
       expect(query.getQuery()).toBe('status="active"');
-      
+
       query.and().like('title', 'test');
       expect(query.getQuery()).toBe('status="active" && title~"test"');
     });
@@ -471,7 +470,7 @@ describe('PocketbaseQuery Comprehensive Tests', () => {
       const category = 'programming';
       const minPrice = '0';
       const maxPrice = '100';
-      
+
       const result = query
         .openBracket()
         .like('title', searchTerm)
@@ -485,13 +484,15 @@ describe('PocketbaseQuery Comprehensive Tests', () => {
         .and()
         .lessThanOrEqual('price', maxPrice)
         .build();
-      
-      expect(result).toBe('(title~"javascript" || description~"javascript") && category="programming" && price>="0" && price<="100"');
+
+      expect(result).toBe(
+        '(title~"javascript" || description~"javascript") && category="programming" && price>="0" && price<="100"'
+      );
     });
 
     test('should handle user permissions scenario', () => {
       const userId = 'user123';
-      
+
       const result = query
         .openBracket()
         .equal('owner', userId)
@@ -503,8 +504,10 @@ describe('PocketbaseQuery Comprehensive Tests', () => {
         .and()
         .notEqual('status', 'deleted')
         .build();
-      
-      expect(result).toBe('(owner="user123" || visibility="public" || collaborators?="user123") && status!="deleted"');
+
+      expect(result).toBe(
+        '(owner="user123" || visibility="public" || collaborators?="user123") && status!="deleted"'
+      );
     });
 
     test('should handle conditional search with optional filters', () => {
@@ -512,7 +515,7 @@ describe('PocketbaseQuery Comprehensive Tests', () => {
       const category = '';
       const tags = 'tech';
       const status = '';
-      
+
       const result = query
         .openBracket()
         .like('title', title)
@@ -526,7 +529,7 @@ describe('PocketbaseQuery Comprehensive Tests', () => {
         .and()
         .equal('published', true)
         .build();
-      console.log('resulteee:',result);
+      console.log('resulteee:', result);
       expect(result).toBe('(title~"test" || tags?~"tech") && published=true');
     });
   });
