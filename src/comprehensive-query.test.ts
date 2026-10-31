@@ -529,7 +529,6 @@ describe('PocketbaseQuery Comprehensive Tests', () => {
         .and()
         .equal('published', true)
         .build();
-      console.log('resulteee:', result);
       expect(result).toBe('(title~"test" || tags?~"tech") && published=true');
     });
   });
