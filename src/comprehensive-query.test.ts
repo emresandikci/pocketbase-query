@@ -429,11 +429,12 @@ describe('PocketbaseQuery Comprehensive Tests', () => {
       expect(secondResult).toBe('category="tech"');
     });
 
-    test('should maintain singleton behavior', () => {
-      const query1 = PocketbaseQuery.getInstance<TestRecord>();
-      const query2 = PocketbaseQuery.getInstance<TestRecord>();
+    test('should return independent builders', () => {
+      const outer = PocketbaseQuery.getInstance<TestRecord>().equal('status', 'active').and();
+      const inner = PocketbaseQuery.getInstance<TestRecord>().equal('category', 'tech').build();
 
-      expect(query1).toBe(query2);
+      expect(inner).toBe('category="tech"');
+      expect(outer.equal('published', true).build()).toBe('status="active" && published=true');
     });
 
     test('should reset state on getInstance', () => {

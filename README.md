@@ -34,7 +34,7 @@ import PocketbaseQuery from '@emresandikci/pocketbase-query';
 
 ### Creating an Instance
 
-The `PocketbaseQuery` class follows the singleton pattern. You should use `getInstance()` to get a query builder instance:
+Use `getInstance()` to get a new query builder. Every call returns its own instance, so queries can be built side by side:
 
 
 ```typescript
@@ -238,7 +238,6 @@ const finalQuery = query.build();
 
 ## Notes
 
-- The `PocketbaseQuery` class uses a singleton pattern, meaning a single instance is reused across calls.
 - The `.build()` method resets the query, so ensure you store the generated string if you need it.
 - The `in()` method applies `OR` between multiple values.
 

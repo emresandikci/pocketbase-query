@@ -58,7 +58,6 @@ const STRING_LITERAL = /"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g;
 
 class PocketbaseQuery<T> {
   private query: string;
-  private static instance: PocketbaseQuery<any>;
   private lastQueryValue: string;
 
   constructor() {
@@ -67,19 +66,13 @@ class PocketbaseQuery<T> {
   }
 
   /**
-   * Retrieves the singleton instance of `PocketbaseQuery`.
-   * If the instance does not exist, it creates a new one.
-   * Resets the query string of the instance before returning it.
+   * Returns a new, empty query builder. Each call is independent, so queries can be built
+   * side by side or nested.
    *
-   * @returns {PocketbaseQuery<T>} The singleton instance of the query builder.
+   * @returns {PocketbaseQuery<T>} A new query builder.
    */
   public static getInstance<T>(): PocketbaseQuery<T> {
-    if (!PocketbaseQuery.instance) {
-      PocketbaseQuery.instance = new PocketbaseQuery<T>();
-    }
-    PocketbaseQuery.instance.query = '';
-    PocketbaseQuery.instance.lastQueryValue = '';
-    return PocketbaseQuery.instance;
+    return new PocketbaseQuery<T>();
   }
 
   getLastQueryValue() {
