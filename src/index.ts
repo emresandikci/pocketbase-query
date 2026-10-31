@@ -19,11 +19,42 @@ enum OperatorEnum {
 
 type OperatorType = `${OperatorEnum}`;
 
+const MACROS = [
+  '@now',
+  '@second',
+  '@minute',
+  '@hour',
+  '@weekday',
+  '@day',
+  '@month',
+  '@year',
+  '@yesterday',
+  '@tomorrow',
+  '@todayStart',
+  '@todayEnd',
+  '@monthStart',
+  '@monthEnd',
+  '@yearStart',
+  '@yearEnd',
+] as const;
+
+type Macro = (typeof MACROS)[number];
+
+type FilterValue = string | number | boolean | Date | Macro | null | undefined;
+
+type FieldModifier = 'lower' | 'length' | 'each';
+
+type FieldName<T> = keyof T & string;
+
+type Field<T> = FieldName<T> | `${FieldName<T>}:${FieldModifier}` | `${FieldName<T>}.${string}`;
+
 interface Expression<T> {
-  field: keyof T;
+  field: Field<T>;
   operator: OperatorType;
-  value: any;
+  value: FilterValue;
 }
+
+const STRING_LITERAL = /"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g;
 
 class PocketbaseQuery<T> {
   private query: string;
@@ -56,42 +87,33 @@ class PocketbaseQuery<T> {
   }
 
   /**
-   * Private helper method to add an expression to the query string.
-   * It takes an expression object with the following properties:
-   * - `field`: The field name to add to the query.
-   * - `operator`: The operator to use for this expression.
-   * - `value`: The value to add to the query.
-   *
-   * If the value is a boolean, it will be appended to the query string
-   * without quotes. Otherwise, the value will be appended with double
-   * quotes around it.
-   *
-   * The method also keeps track of the last query value and will reset it
-   * after adding the expression to the query string.
-   *
-   * @param {Expression<T>} expression The expression object to add to the query.
-   * @returns {PocketbaseQuery<T>} The current instance for chaining.
+   * Serializes a value the same way the official PocketBase SDK does in `pb.filter()`:
+   * strings and dates are JSON-quoted (so quotes and backslashes are escaped), numbers and
+   * booleans are written as-is, and datetime macros such as `@now` are left unquoted.
+   * Returns `null` for values that should be skipped.
    */
+  private formatValue(value: FilterValue): string | null {
+    if (value === null || value === undefined || value === '') return null;
+    if (typeof value === 'boolean') return String(value);
+    if (typeof value === 'number') return Number.isFinite(value) ? String(value) : null;
+    if (value instanceof Date) {
+      return isNaN(value.getTime()) ? null : JSON.stringify(value.toISOString().replace('T', ' '));
+    }
+    if (MACROS.includes(value as Macro)) return value;
+    return JSON.stringify(String(value));
+  }
+
   private addExpression({ field, operator, value }: Expression<T>) {
-    const isValidValue = value !== null && value !== undefined && value !== '';
+    const formatted = this.formatValue(value);
+    if (formatted === null) return this;
 
-    if (typeof value === 'boolean') {
-      this.lastQueryValue = value.toString();
-      this.query += `${field.toString()}${operator}${value}`;
-      return this;
-    }
-
-    if (isValidValue) {
-      this.lastQueryValue = value;
-      this.query += `${field.toString()}${operator}"${value}"`;
-    }
+    this.lastQueryValue = String(value);
+    this.query += `${field}${operator}${formatted}`;
     return this;
   }
 
   /**
    * Adds an AND condition to the query string.
-   * If the last query value was not empty, it will add " && " to the query
-   * string to separate the expressions.
    *
    * @returns {PocketbaseQuery<T>} The current instance for chaining.
    */
@@ -103,8 +125,6 @@ class PocketbaseQuery<T> {
 
   /**
    * Adds an OR condition to the query string.
-   * If the last query value was not empty, it will add " || " to the query
-   * string to separate the expressions.
    *
    * @returns {PocketbaseQuery<T>} The current instance for chaining.
    */
@@ -138,14 +158,13 @@ class PocketbaseQuery<T> {
 
   /**
    * Adds an equality condition to the query for the specified field and value.
-   * The condition is formatted as `field="value"` or `field=true/false` if
-   * the value is a boolean.
+   * The condition is formatted as `field="value"`.
    *
-   * @param {keyof T} field - The field name to be compared.
-   * @param {string | boolean} value - The value to compare against; can be a string or boolean.
+   * @param {Field<T>} field - The field name to be compared.
+   * @param {FilterValue} value - The value to compare against.
    * @returns {PocketbaseQuery<T>} The current instance for chaining.
    */
-  equal(field: keyof T, value: string | boolean) {
+  equal(field: Field<T>, value: FilterValue) {
     return this.addExpression({ field, operator: OperatorEnum.Equal, value });
   }
 
@@ -153,11 +172,11 @@ class PocketbaseQuery<T> {
    * Adds a not-equal condition to the query for the specified field and value.
    * The condition is formatted as `field!="value"`.
    *
-   * @param {keyof T} field - The field name to be compared.
-   * @param {string} value - The value to compare against.
+   * @param {Field<T>} field - The field name to be compared.
+   * @param {FilterValue} value - The value to compare against.
    * @returns {PocketbaseQuery<T>} The current instance for chaining.
    */
-  notEqual(field: keyof T, value: string) {
+  notEqual(field: Field<T>, value: FilterValue) {
     return this.addExpression({
       field,
       operator: OperatorEnum.NotEqual,
@@ -169,11 +188,11 @@ class PocketbaseQuery<T> {
    * Adds a greater-than condition to the query for the specified field and value.
    * The condition is formatted as `field>"value"`.
    *
-   * @param {keyof T} field - The field name to be compared.
-   * @param {string} value - The value to compare against.
+   * @param {Field<T>} field - The field name to be compared.
+   * @param {FilterValue} value - The value to compare against.
    * @returns {PocketbaseQuery<T>} The current instance for chaining.
    */
-  greaterThan(field: keyof T, value: string) {
+  greaterThan(field: Field<T>, value: FilterValue) {
     return this.addExpression({
       field,
       operator: OperatorEnum.GreaterThan,
@@ -185,11 +204,11 @@ class PocketbaseQuery<T> {
    * Adds a greater-than or equal condition to the query for the specified field and value.
    * The condition is formatted as `field>="value"`.
    *
-   * @param {keyof T} field - The field name to be compared.
-   * @param {string} value - The value to compare against.
+   * @param {Field<T>} field - The field name to be compared.
+   * @param {FilterValue} value - The value to compare against.
    * @returns {PocketbaseQuery<T>} The current instance for chaining.
    */
-  greaterThanOrEqual(field: keyof T, value: string) {
+  greaterThanOrEqual(field: Field<T>, value: FilterValue) {
     return this.addExpression({
       field,
       operator: OperatorEnum.GreaterThanOrEqual,
@@ -201,11 +220,11 @@ class PocketbaseQuery<T> {
    * Adds a less-than condition to the query for the specified field and value.
    * The condition is formatted as `field<"value"`.
    *
-   * @param {keyof T} field - The field name to be compared.
-   * @param {string} value - The value to compare against.
+   * @param {Field<T>} field - The field name to be compared.
+   * @param {FilterValue} value - The value to compare against.
    * @returns {PocketbaseQuery<T>} The current instance for chaining.
    */
-  lessThan(field: keyof T, value: string) {
+  lessThan(field: Field<T>, value: FilterValue) {
     return this.addExpression({
       field,
       operator: OperatorEnum.LessThan,
@@ -217,11 +236,11 @@ class PocketbaseQuery<T> {
    * Adds a less-than or equal condition to the query for the specified field and value.
    * The condition is formatted as `field<="value"`.
    *
-   * @param {keyof T} field - The field name to be compared.
-   * @param {string} value - The value to compare against.
+   * @param {Field<T>} field - The field name to be compared.
+   * @param {FilterValue} value - The value to compare against.
    * @returns {PocketbaseQuery<T>} The current instance for chaining.
    */
-  lessThanOrEqual(field: keyof T, value: string) {
+  lessThanOrEqual(field: Field<T>, value: FilterValue) {
     return this.addExpression({
       field,
       operator: OperatorEnum.LessThanOrEqual,
@@ -233,11 +252,11 @@ class PocketbaseQuery<T> {
    * Adds a LIKE condition (partial match) to the query for the specified field and value.
    * The condition is formatted as `field~"value"`.
    *
-   * @param {keyof T} field - The field name to be compared.
-   * @param {string} value - The value to compare against.
+   * @param {Field<T>} field - The field name to be compared.
+   * @param {FilterValue} value - The value to compare against.
    * @returns {PocketbaseQuery<T>} The current instance for chaining.
    */
-  like(field: keyof T, value: string) {
+  like(field: Field<T>, value: FilterValue) {
     return this.addExpression({ field, operator: OperatorEnum.Like, value });
   }
 
@@ -245,11 +264,11 @@ class PocketbaseQuery<T> {
    * Adds a NOT LIKE condition to the query for the specified field and value.
    * The condition is formatted as `field!~"value"`.
    *
-   * @param {keyof T} field - The field name to be compared.
-   * @param {string} value - The value to compare against.
+   * @param {Field<T>} field - The field name to be compared.
+   * @param {FilterValue} value - The value to compare against.
    * @returns {PocketbaseQuery<T>} The current instance for chaining.
    */
-  notLike(field: keyof T, value: string) {
+  notLike(field: Field<T>, value: FilterValue) {
     return this.addExpression({ field, operator: OperatorEnum.NotLike, value });
   }
 
@@ -257,11 +276,11 @@ class PocketbaseQuery<T> {
    * Adds an equality condition for array fields to the query for the specified field and value.
    * The condition is formatted as `field?="value"`.
    *
-   * @param {keyof T} field - The field name to be compared, which should be an array.
-   * @param {string} value - The value to compare against.
+   * @param {Field<T>} field - The field name to be compared, which should be an array.
+   * @param {FilterValue} value - The value to compare against.
    * @returns {PocketbaseQuery<T>} The current instance for chaining.
    */
-  anyEqual(field: keyof T, value: string) {
+  anyEqual(field: Field<T>, value: FilterValue) {
     return this.addExpression({
       field,
       operator: OperatorEnum.AnyEqual,
@@ -273,11 +292,11 @@ class PocketbaseQuery<T> {
    * Adds a NOT EQUAL condition for array fields to the query for the specified field and value.
    * The condition is formatted as `field?!="value"`.
    *
-   * @param {keyof T} field - The field name to be compared, which should be an array.
-   * @param {string} value - The value to compare against.
+   * @param {Field<T>} field - The field name to be compared, which should be an array.
+   * @param {FilterValue} value - The value to compare against.
    * @returns {PocketbaseQuery<T>} The current instance for chaining.
    */
-  anyNotEqual(field: keyof T, value: string) {
+  anyNotEqual(field: Field<T>, value: FilterValue) {
     return this.addExpression({
       field,
       operator: OperatorEnum.AnyNotEqual,
@@ -287,13 +306,13 @@ class PocketbaseQuery<T> {
 
   /**
    * Adds a greater-than condition for array fields to the query for the specified field and value.
-   * The condition is formatted as `field?>="value"`.
+   * The condition is formatted as `field?>"value"`.
    *
-   * @param {keyof T} field - The field name to be compared, which should be an array.
-   * @param {string} value - The value to compare against.
+   * @param {Field<T>} field - The field name to be compared, which should be an array.
+   * @param {FilterValue} value - The value to compare against.
    * @returns {PocketbaseQuery<T>} The current instance for chaining.
    */
-  anyGreaterThan(field: keyof T, value: string) {
+  anyGreaterThan(field: Field<T>, value: FilterValue) {
     return this.addExpression({
       field,
       operator: OperatorEnum.AnyGreaterThan,
@@ -305,11 +324,11 @@ class PocketbaseQuery<T> {
    * Adds a greater-than or equal condition for array fields to the query for the specified field and value.
    * The condition is formatted as `field?>="value"`.
    *
-   * @param {keyof T} field - The field name to be compared, which should be an array.
-   * @param {string} value - The value to compare against.
+   * @param {Field<T>} field - The field name to be compared, which should be an array.
+   * @param {FilterValue} value - The value to compare against.
    * @returns {PocketbaseQuery<T>} The current instance for chaining.
    */
-  anyGreaterThanOrEqual(field: keyof T, value: string) {
+  anyGreaterThanOrEqual(field: Field<T>, value: FilterValue) {
     return this.addExpression({
       field,
       operator: OperatorEnum.AnyGreaterThanOrEqual,
@@ -319,13 +338,13 @@ class PocketbaseQuery<T> {
 
   /**
    * Adds a less-than condition for array fields to the query for the specified field and value.
-   * The condition is formatted as `field?<="value"`.
+   * The condition is formatted as `field?<"value"`.
    *
-   * @param {keyof T} field - The field name to be compared, which should be an array.
-   * @param {string} value - The value to compare against.
+   * @param {Field<T>} field - The field name to be compared, which should be an array.
+   * @param {FilterValue} value - The value to compare against.
    * @returns {PocketbaseQuery<T>} The current instance for chaining.
    */
-  anyLessThan(field: keyof T, value: string) {
+  anyLessThan(field: Field<T>, value: FilterValue) {
     return this.addExpression({
       field,
       operator: OperatorEnum.AnyLessThan,
@@ -337,11 +356,11 @@ class PocketbaseQuery<T> {
    * Adds a less-than or equal condition for array fields to the query for the specified field and value.
    * The condition is formatted as `field?<="value"`.
    *
-   * @param {keyof T} field - The field name to be compared, which should be an array.
-   * @param {string} value - The value to compare against.
+   * @param {Field<T>} field - The field name to be compared, which should be an array.
+   * @param {FilterValue} value - The value to compare against.
    * @returns {PocketbaseQuery<T>} The current instance for chaining.
    */
-  anyLessThanOrEqual(field: keyof T, value: string) {
+  anyLessThanOrEqual(field: Field<T>, value: FilterValue) {
     return this.addExpression({
       field,
       operator: OperatorEnum.AnyLessThanOrEqual,
@@ -353,11 +372,11 @@ class PocketbaseQuery<T> {
    * Adds a LIKE condition (partial match) for array fields to the query for the specified field and value.
    * The condition is formatted as `field?~"value"`.
    *
-   * @param {keyof T} field - The field name to be compared, which should be an array.
-   * @param {string} value - The value to compare against.
+   * @param {Field<T>} field - The field name to be compared, which should be an array.
+   * @param {FilterValue} value - The value to compare against.
    * @returns {PocketbaseQuery<T>} The current instance for chaining.
    */
-  anyLike(field: keyof T, value: string) {
+  anyLike(field: Field<T>, value: FilterValue) {
     return this.addExpression({ field, operator: OperatorEnum.AnyLike, value });
   }
 
@@ -365,11 +384,11 @@ class PocketbaseQuery<T> {
    * Adds a NOT LIKE condition (partial match) for array fields to the query for the specified field and value.
    * The condition is formatted as `field?!~"value"`.
    *
-   * @param {keyof T} field - The field name to be compared, which should be an array.
-   * @param {string} value - The value to compare against.
+   * @param {Field<T>} field - The field name to be compared, which should be an array.
+   * @param {FilterValue} value - The value to compare against.
    * @returns {PocketbaseQuery<T>} The current instance for chaining.
    */
-  anyNotLike(field: keyof T, value: string) {
+  anyNotLike(field: Field<T>, value: FilterValue) {
     return this.addExpression({
       field,
       operator: OperatorEnum.AnyNotLike,
@@ -380,16 +399,12 @@ class PocketbaseQuery<T> {
    * Adds an IN condition for the specified field and array of values.
    * The condition is formatted as `field~"value1" || field~"value2" || ...`.
    *
-   * @param {keyof T} field - The field name to be compared.
-   * @param {any[]} values - The values to compare against.
+   * @param {Field<T>} field - The field name to be compared.
+   * @param {FilterValue[]} values - The values to compare against.
    * @returns {PocketbaseQuery<T>} The current instance for chaining.
    */
-  in(field: keyof T, values: any[]) {
-    const validValues = values.filter(
-      (value) => value !== null && value !== undefined && value !== ''
-    );
-
-    if (!validValues.length) return this;
+  in(field: Field<T>, values: FilterValue[]) {
+    const validValues = values.filter((value) => this.formatValue(value) !== null);
 
     validValues.forEach((value, index) => {
       this.addExpression({ field, operator: OperatorEnum.Like, value });
@@ -400,7 +415,7 @@ class PocketbaseQuery<T> {
   /**
    * Adds a custom filter string to the query.
    * This can be useful when you need to create a filter that is not supported by the query builder.
-   * The custom filter string will be appended to the query.
+   * The custom filter string is appended as-is, without escaping, so never pass untrusted input.
    *
    * @param {string} filter - The custom filter string to be added to the query.
    * @returns {PocketbaseQuery<T>} The current instance for chaining.
@@ -441,19 +456,20 @@ class PocketbaseQuery<T> {
 
   /**
    * Clean up the query string by removing unnecessary operators, brackets, and whitespace.
-   * This method is used internally by the query builder to generate a valid filter string.
+   * String literals are swapped for placeholders first so their content is never touched.
    * @param {string} query - The query string to be cleaned.
    * @returns {string} The cleaned query string.
    * @private
    */
   private cleanupQuery(query: string): string {
-    let result = query;
+    const literals: string[] = [];
+    let result = query.replace(STRING_LITERAL, (literal) => `"${literals.push(literal) - 1}"`);
     let prevResult = '';
 
     while (result !== prevResult) {
       prevResult = result;
 
-      // Remove empty brackets first
+      // Remove empty brackets
       result = result.replace(/\(\s*\)/g, '');
 
       // Remove operators before closing brackets: || ) or && )
@@ -472,23 +488,16 @@ class PocketbaseQuery<T> {
       result = result.replace(/^\s*(&&|\|\|)\s*/, '');
 
       // Handle specific pattern: ")condition" -> ") && condition"
-      result = result.replace(/\)([a-zA-Z_][a-zA-Z0-9_]*[=!<>~?]+)/g, ') && $1');
+      result = result.replace(/\)([a-zA-Z_@][\w.:@]*[=!<>~?]+)/g, ') && $1');
 
       // Clean up spacing around operators
       result = result.replace(/\s*(&&|\|\|)\s*/g, ' $1 ');
-
-      // Remove empty brackets again after other cleanups
-      result = result.replace(/\(\s*\)/g, '');
-
-      // Clean up brackets
-      result = result.replace(/\(\)\s*([a-zA-Z])/g, '$1');
-      result = result.replace(/([a-zA-Z)"])\s*\(\)/g, '$1');
 
       // Clean up any remaining whitespace issues
       result = result.replace(/\s+/g, ' ').trim();
     }
 
-    return result;
+    return result.replace(/"(\d+)"/g, (_, index) => literals[Number(index)]);
   }
 }
 

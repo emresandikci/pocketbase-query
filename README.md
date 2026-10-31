@@ -54,7 +54,7 @@ const customFilters = query
   .greaterThan('comments', 50)
   .build();
 
-console.log(customFilters); // Outputs: status='active' && comments>50
+console.log(customFilters); // Outputs: status="active" && comments>50
 
 await pb.collection('posts').getFullList({
 	filter: customFilters,
@@ -91,9 +91,31 @@ enum OperatorEnum {
 }
 ```
 
+### Fields and values
+
+`field` is a key of `T`, optionally with a PocketBase modifier (`title:lower`, `tags:length`, `tags:each`) or a relation path (`author.name`).
+
+`value` is a `FilterValue`: `string | number | boolean | Date | null | undefined`.
+
+- Strings and dates are quoted and escaped the same way as `pb.filter()` in the official SDK, so user input cannot break out of the string.
+- Numbers and booleans are written without quotes.
+- Datetime macros (`@now`, `@todayStart`, `@monthEnd`, ...) are written without quotes.
+- `null`, `undefined`, `''` and `NaN` are skipped, along with the `&&` / `||` / brackets left around them.
+
+```typescript
+query
+  .like('title:lower', 'news')
+  .and()
+  .greaterThanOrEqual('created', '@todayStart')
+  .and()
+  .greaterThan('tags:length', 0)
+  .build();
+// title:lower~"news" && created>=@todayStart && tags:length>0
+```
+
 ### Query Builder Methods
 
-#### `equal(field: keyof T, value: string | boolean)`
+#### `equal(field, value)`
 
 Adds an equality condition to the query.
 
@@ -101,7 +123,7 @@ Adds an equality condition to the query.
 query.equal("status", "active");
 ```
 
-#### `notEqual(field: keyof T, value: string)`
+#### `notEqual(field, value)`
 
 Adds a not-equal condition to the query.
 
@@ -109,23 +131,23 @@ Adds a not-equal condition to the query.
 query.notEqual("category", "archived");
 ```
 
-#### `greaterThan(field: keyof T, value: string)`
+#### `greaterThan(field, value)`
 
 Adds a greater-than condition.
 
 ```typescript
-query.greaterThan("age", "18");
+query.greaterThan("age", 18);
 ```
 
-#### `lessThan(field: keyof T, value: string)`
+#### `lessThan(field, value)`
 
 Adds a less-than condition.
 
 ```typescript
-query.lessThan("price", "100");
+query.lessThan("price", 100);
 ```
 
-#### `like(field: keyof T, value: string)`
+#### `like(field, value)`
 
 Adds a LIKE condition (partial match).
 
@@ -133,7 +155,7 @@ Adds a LIKE condition (partial match).
 query.like("name", "John");
 ```
 
-#### `notLike(field: keyof T, value: string)`
+#### `notLike(field, value)`
 
 Adds a NOT LIKE condition.
 
@@ -141,7 +163,7 @@ Adds a NOT LIKE condition.
 query.notLike("description", "discount");
 ```
 
-#### `anyEqual(field: keyof T, value: string)`
+#### `anyEqual(field, value)`
 
 Adds an equality condition for array fields.
 
@@ -149,9 +171,9 @@ Adds an equality condition for array fields.
 query.anyEqual("tags", "sale");
 ```
 
-#### `in(field: keyof T, values: any[])`
+#### `in(field, values)`
 
-Adds an OR condition for multiple values.
+Adds an OR condition for multiple values, using `~` (partial match) for each value.
 
 ```typescript
 query.in("category", ["electronics", "furniture"]);
@@ -159,10 +181,10 @@ query.in("category", ["electronics", "furniture"]);
 
 #### `customFilter(filter: string)`
 
-Adds a custom filter string to the query.
+Adds a custom filter string to the query as-is, for syntax the builder does not cover (`strftime()`, `geoDistance()`, `@request.*`, back-relations). It is not escaped, so never pass untrusted input.
 
 ```typescript
-query.customFilter("status='active' && price>100");
+query.customFilter("strftime('%Y-%m', created) = '2026-01'");
 ```
 
 ---
@@ -174,7 +196,7 @@ query.customFilter("status='active' && price>100");
 Joins multiple conditions with `&&`.
 
 ```typescript
-query.equal("status", "active").and().greaterThan("price", "50");
+query.equal("status", "active").and().greaterThan("price", 50);
 ```
 
 #### `or()`
@@ -190,7 +212,7 @@ query.equal("status", "active").or().equal("status", "pending");
 Groups conditions using parentheses.
 
 ```typescript
-query.openBracket().equal("status", "active").or().equal("status", "pending").closeBracket().and().greaterThan("price", "50");
+query.openBracket().equal("status", "active").or().equal("status", "pending").closeBracket().and().greaterThan("price", 50);
 ```
 
 ---
