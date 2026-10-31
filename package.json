@@ -11,46 +11,33 @@
   "scripts": {
     "build": "tsup --env.NODE_ENV production",
     "test": "jest",
+    "typecheck": "tsc",
     "prepare": "husky",
-    "lint": "npx eslint \"src/**/*.{ts,js}\"",
-    "lint:fix": "npm run lint --fix",
+    "lint": "eslint \"src/**/*.{ts,js}\"",
+    "lint:fix": "eslint \"src/**/*.{ts,js}\" --fix",
     "format": "prettier --write \"src/**/*.{js,ts}\"",
     "validate": "prettier --check \"src/**/*.{js,ts}\" && npm run lint",
-    "release": "standard-version",
-    "release:major": "standard-version --release-as major",
-    "release:minor": "standard-version --release-as minor",
-    "release:patch": "standard-version --release-as patch",
-    "prerelase": "npm run release -- --prerelease staging",
-    "prerelase:major": "npm run release -- --prerelease staging -r major",
-    "prerelase:minor": "npm run release -- --prerelease staging -r minor",
-    "prerelase:patch": "npm run release -- --prerelease staging -r patch",
-    "tags": "git push --tags",
-    "commit": "npx git-cz"
+    "commit": "git-cz"
   },
   "devDependencies": {
-    "@commitlint/cli": "^19.4.0",
-    "@commitlint/config-conventional": "^19.2.2",
-    "@eslint/js": "^9.9.0",
-    "@types/jest": "^29.5.12",
-    "eslint": "^9.9.0",
-    "globals": "^15.9.0",
-    "husky": "^8.0.3",
-    "jest": "^29.7.0",
-    "lint-staged": "^15.2.9",
-    "prettier": "3.3.3",
-    "ts-jest": "^29.2.4",
-    "ts-node": "^10.9.2",
-    "tsup": "^8.2.4",
-    "typescript": "^5.5.4",
-    "typescript-eslint": "^8.2.0",
-    "standard-version": "^9.5.0"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged",
-      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS",
-      "pre-push": "npm run test"
-    }
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
+    "@eslint/js": "^10.0.1",
+    "@semantic-release/changelog": "^7.0.0",
+    "@semantic-release/git": "^11.0.1",
+    "@types/jest": "^30.0.0",
+    "commitizen": "^4.3.2",
+    "cz-conventional-changelog": "^3.3.0",
+    "eslint": "^10.14.0",
+    "husky": "^9.1.7",
+    "jest": "^30.5.2",
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.10",
+    "semantic-release": "^25.0.9",
+    "ts-jest": "^29.4.15",
+    "tsup": "^9.0.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.1"
   },
   "lint-staged": {
     "src/**/*.{js,ts}": [
@@ -75,5 +62,10 @@
   "bugs": {
     "url": "https://github.com/emresandikci/pocketbase-query/issues"
   },
-  "homepage": "https://github.com/emresandikci/pocketbase-query#readme"
+  "homepage": "https://github.com/emresandikci/pocketbase-query#readme",
+  "config": {
+    "commitizen": {
+      "path": "cz-conventional-changelog"
+    }
+  }
 }

@@ -1,6 +1,0 @@
-.husky
-.vscode
-node_modules
-*.test.*
-dist/
-*.cjs
