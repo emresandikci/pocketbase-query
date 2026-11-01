@@ -40,7 +40,8 @@ const MACROS = [
 
 type Macro = (typeof MACROS)[number];
 
-type FilterValue = string | number | boolean | Date | Macro | null | undefined;
+// `string & {}` keeps the macro literals in autocomplete instead of collapsing them into `string`.
+type FilterValue = Macro | (string & {}) | number | boolean | Date | null | undefined;
 
 type FieldModifier = 'lower' | 'length' | 'each';
 
