@@ -1,3 +1,10 @@
+## [0.5.1](https://github.com/emresandikci/pocketbase-query/compare/v0.5.0...v0.5.1) (2026-11-01)
+
+
+### Bug Fixes
+
+* **types:** keep datetime macros in editor autocomplete ([263faac](https://github.com/emresandikci/pocketbase-query/commit/263faacd0fb9c9e2d02fff72452adf336895c762))
+
 # [0.5.0](https://github.com/emresandikci/pocketbase-query/compare/v0.4.1...v0.5.0) (2026-10-31)
 
 
